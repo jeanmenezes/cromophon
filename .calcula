@@ -1,0 +1,23 @@
+#!/bin/sh
+
+filename=$1
+basename=$(echo "$filename" | sed 's/........$//g')
+
+linhas=$(cat "$filename" | wc -l)
+
+echo "Converting XYZ data to xyz and generating new CSV file.\nThis procedure can take several minutes, depending on image size.\nYou might go sleep, have some coffee, or find something more important to do."
+
+for i in $(seq 1 $linhas)
+do
+	xis=$(awk 'NR=='$i'{print;exit}' "$filename" | awk -F "," '{print $1}')
+	ipsilon=$(awk 'NR=='$i'{print;exit}' "$filename" | awk -F "," '{print $2}')
+	ze=$(awk 'NR=='$i'{print;exit}' "$filename" | awk -F "," '{print $3}')
+	op=$(echo "($xis + $ipsilon + $ze)" | bc -l)
+	x=$(echo "($xis / $op)" | bc -l)
+	y=$(echo "($ipsilon / $op)" | bc -l)
+	z=$(echo "($ze / $op)" | bc -l)
+	echo "$x,$y,$z" >> "$basename".xyz.csv
+done
+
+echo 'Done.'
+echo " "

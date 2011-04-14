@@ -1,0 +1,108 @@
+#!/bin/sh
+
+txtbld=$(tput bold)
+txtrst=$(tput sgr0)
+txtund=$(tput sgr 0 1)
+
+type convert > ".type" || { echo "I require ${txtbld}ImageMagick${txtrst} but it's not installed.  Aborting." >&2; exit 1; }
+type chuck >> ".type" || { echo "I require ${txtbld}ChucK${txtrst} but it's not installed.  Aborting." >&2; exit 1; }
+type lame >> ".type" || { echo "I require ${txtbld}LAME${txtrst} but it's not installed.  Aborting." >&2; exit 1; }
+type awk >> ".type" || { echo "I require ${txtbld}awk${txtrst} but it's not installed.  Aborting." >&2; exit 1; }
+type sox >> ".type" || { echo "I require ${txtbld}sox${txtrst} but it's not installed.  Aborting." >&2; exit 1; }
+
+echo ''
+echo "Welcome to ${txtbld}Cromophon 0.01 beta${txtrst}."
+echo ''
+echo "- * - * -"
+echo ''
+echo "Software created by Jean Menezes da Rocha (jean.rudess AT gmail DOT com)"
+echo "This version was released Oct. 20th, 2010"
+echo ''
+echo "- * - * -"
+echo ''
+
+filename=$1
+basename=$(echo "$filename" | sed 's/....$//g')
+
+if [ $# -eq 0 ]; then
+	echo "Usage: ${txtbld}./cromophon ${txtrst}<image_name>"
+	echo "Type ${txtbld}./cromophon help${txtrst} for further information."
+	exit 1
+elif [ $# -gt 1 ]; then
+	echo "Too much filenames declared."
+	echo "Usage: ${txtbld}./cromophon ${txtrst}<image_name>"
+	echo "Type ${txtbld}./cromophon help${txtrst} for further information."
+	exit 1
+fi
+
+if [ "$filename" = 'help' ]; then
+	echo "Usage: ${txtbld}./cromophon ${txtrst}<image_name>"
+	echo ''
+	echo '- * - * -'
+	echo ''
+	echo "Running this command will generate a subfolder containing 64 .wav files, \n\
+each one of them relating to one of the main colors found in the image you \n\
+supplied as argument. In addition, there will be one .ck file to be used \n\
+with ChucK and freely modified, as well as the .csv files used to generate \n\
+sound synthesis parameters and one .html document containing reference to \n\
+colors, their occurences in the image and RGB code associations with .wav \n\
+filenames."
+	echo ''
+	echo "The duration of each sound sample is based upon how many times a color \n\
+occurs in the image. Each sound consists of three partials, each one with \n\
+its frequency controlled by X (red/high wavelength), Y (green/medium \n\
+wavelength) and Z (blue/low wavelength) components of the referred color. \n\
+Amplitude of each of these partial waves is controled by x, y and z \n\
+proportional energies for each wavelength group."
+	echo ''
+	echo "This software is free and opensource, and is alive thanks to ${txtbld}Linux${txtrst}, ${txtbld}Bash${txtrst}, \n\
+${txtbld}ImageMagick${txtrst} and ${txtbld}ChucK${txtrst}."	
+	exit 1
+fi
+
+if [ ! -f "$filename" ]; then
+	echo "The specified filename does not exist."
+	exit 1
+fi
+
+./.gera_xyz "$filename"
+./.calcula "$basename".XYZ.csv
+./.cria_chuck "$basename".XYZ.csv
+
+echo "Generating wav files..."
+chuck --srate48000 --silent "$basename".ck
+
+mkdir "$basename"_cromophon
+mkdir './'"$basename"'_cromophon/.mp3/'
+
+for fl in *.csv
+do
+	mv "$fl" './'"$basename"'_cromophon/'
+done
+
+for fl in *small*
+do
+	rm "$fl"
+done
+
+rm .mean.1 .mean.2 .mean.3 .type
+
+for fl in *.ck
+do
+	mv "$fl" './'"$basename"'_cromophon/'
+done
+
+./.gera_html_ref "$basename"
+mv color_ref.html './'"$basename"'_cromophon/'
+
+rm .rgblist .occ_list
+
+for fl in *.wav
+do
+	lame --quiet "$fl" "$fl.mp3" 
+	mv "$fl" './'"$basename"'_cromophon/'
+	mv "${fl}.mp3" './'"$basename"'_cromophon/.mp3/'
+done
+
+echo "Done. You can find your .wav, .csv and .ck files , as well as an .html document \n\
+with color reference in the subdirectory: ${txtbld}${basename}_cromophon/${txtrst}"

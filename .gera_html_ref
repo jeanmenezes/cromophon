@@ -1,0 +1,34 @@
+#!/bin/sh
+
+bdir="$1"
+
+echo "<html>\n\
+<head>\n\
+<title>RGB color reference for project $bdir</title>\n\
+</head>\n\
+\n\
+<body>\n\
+\n\
+<h1>RGB color reference for project <i>$bdir</i></h1>\n\
+\n\
+<table>" > color_ref.html
+
+for f in *.wav
+do
+	rgb=$(echo '#'"$f" | sed 's/_//g' | sed 's/....$//g')
+	nrgb=$(echo "$f" | sed 's/_//g' | sed 's/....$//g')
+	nline=$(cat .rgblist | grep -n "$nrgb" | awk -F ":" '{print $1}')
+	occ=$(cat .occ_list | head -n "$nline" | tail -n 1)
+	echo "<tr>\n\
+<td bgcolor=\"$rgb\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>\n\
+<td>${rgb}.wav</td>\n\
+<td>$occ occurrences</td>\n\
+<td><audio src=\"./.mp3/${nrgb}.wav.mp3\" controls=\"controls\" type=\"audio/mp3\"></td>\n\
+</tr>\n\
+\n" >> color_ref.html
+done
+
+echo "</table>\n\
+\n\
+</body>\n\
+</html>" >> color_ref.html

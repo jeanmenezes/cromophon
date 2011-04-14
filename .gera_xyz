@@ -1,0 +1,22 @@
+#!/bin/sh
+
+filename=$1
+
+basename=$(echo "$filename" | sed 's/....$//g')
+exte=$(echo "$filename" | sed 's/.*\(...$\)/\1/')
+
+echo "Resizing image to 25% and reducing to 64 colors..."
+convert "$filename" -resize 25% tmp."$exte"
+convert tmp."$exte" -dither FloydSteinberg -colors 64 "$basename".small.gif
+rm tmp."$exte"
+echo "Done."
+echo " "
+echo "Generating CSV file with XYZ data..."
+convert "$basename".small.gif -colorspace XYZ tmp.txt
+cat tmp.txt | sed 1d | sed 's/.*z(//g' | sed 's/)//g' | awk '!x[$0]++' > "$basename".XYZ.csv
+cat tmp.txt | sed 1d | sed 's/.*#//g' | awk -F "  " '{print $1}' | awk ' !x[$0]++' > .rgblist
+cat tmp.txt | sed 1d | sed 's/.*z(//g' | sed 's/)//g' | awk '{count[$1]++}END{for(j in count) print count[j]," ",j}' FS=: | \
+sort -g -r | awk -F "   " '{print $1}' > .occ_list
+echo "Done."
+echo " "
+rm tmp.txt

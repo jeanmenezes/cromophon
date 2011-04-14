@@ -1,0 +1,19 @@
+#!/bin/sh
+
+filename=$2
+
+basename=$(echo "$filename" | sed 's/....$//g')
+exte=$(echo "$filename" | sed 's/.*\(...$\)/\1/')
+
+linhas=$(cat "$filename" | wc -l)
+
+soma=0
+
+for j in $(seq 1 $linhas)
+do
+	parcela=$(cat "$filename" | awk -F "," '{print $'$1'}' | head -n $j | tail -n 1)
+	soma=`expr $soma + $parcela`
+done
+
+med=$(echo "$soma / $linhas" | bc -l)
+echo "$med * 2" | bc -l > .mean.$1
